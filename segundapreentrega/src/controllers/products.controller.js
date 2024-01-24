@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
     const productsData = await productsModel.paginate(
         parsedQuery(),
         {
-            limit: limit || 2,
+            limit: limit || 10,
             page: page || 2,
             sort: sort ? { price: isSorted() } : null,
             lean: true
@@ -42,7 +42,8 @@ router.get('/', async (req, res) => {
         hasPrevPage,
         hasNextPage, 
         prevPage, 
-        nextPage, 
+        nextPage,
+        style: 'products.css',
     })
 })
 
@@ -66,8 +67,14 @@ router.post('/', async (req, res) => {
         stock
     }
 
-    const newProduct = await productsModel.create(newProductInfo)
-    res.json({ message: 'Product created', newProduct })
+    try {
+        const newProduct = await productsModel.create(newProductInfo)
+        await newProduct.save()
+        res.json({ message: 'Product created', newProduct })
+
+    }catch(error) {
+        res.status(500).json({ status: 'error', error: 'Internal error' });
+    }
 })
 
 router.put('/:id', async (req, res) => {
