@@ -6,7 +6,7 @@ const router = Router()
 
 // Obtiene todos los productos del carrito
 router.get('/', async (req, res) => {
-    try{
+    try {
         const carts = await cartModel.find()
         res.json({ message: carts })
     } catch (error) {
@@ -18,8 +18,8 @@ router.get('/', async (req, res) => {
 router.get('/:cid', async (req, res) => {
     try {
         const { cid } = req.params
-        const cart = await cartModel.findById(cid)
-        exect()
+        const cart = await cartModel.findById(cid).populate('products').
+        exec()
         res.json({ message: cart })
     } catch (error) {
         res.status(500).json({ status: 'error', error: 'Internal error' });
@@ -32,7 +32,7 @@ router.post('/', async (req, res) => {
         const cart = new cartModel()
         cart.save()
         res.send(cart)
-    }catch (error) {
+    } catch (error) {
         res.status(500).json({ status: 'error', error: 'Internal error' });
     }
 })
@@ -41,24 +41,32 @@ router.post('/', async (req, res) => {
 router.post('/:cid/product/:pid', async (req, res) => {
     try {
         const { cid, pid } = req.params
+        const { quantity } = req.body
         const product = await productsModel.findById(pid)
+
         if (product) {
-            const result = await cartModel.updateOne({ _id: cid }, { $push: { products: product._id } })
-            res.status(201).json({ status: 'success', message: result })
-        }else {
-            res.send({data:[], message: 'Product not found'})
+            const cart = await cartModel.findById(cid)
+            const existsProduct = cart.products.find(product => product.product === pid)
+
+            if (existsProduct) {
+                existsProduct.quantity += quantity
+            } else {
+                cart.products.push({ product: pid, quantity })
+            }
         }
     } catch (error) {
         res.status(500).json({ status: 'error', error: 'Internal error' });
     }
 })
 
+
+
 // Actualiza la cantidad de un producto
 router.put('/:cid/product/:pid', async (req, res) => {
     try {
         const { cid, pid } = req.params
-        const { qty } = req.body
-        const result = await cartModel.updateOne({ _id: cid, }, { $set: { 'products.$.quantity': qty }})
+        const { quantity } = req.body
+        const result = await cartModel.updateOne({ _id: cid }, { $set: { products: { product: pid, quantity } } })
         res.json({ message: result })
     } catch (error) {
         res.status(500).json({ status: 'error', error: 'Internal error' });
@@ -69,7 +77,7 @@ router.put('/:cid/product/:pid', async (req, res) => {
 router.delete('/:cid/product/:pid', async (req, res) => {
     try {
         const { cid, pid } = req.params
-        const result = await cartModel.deleteOne({ _id: cid }, { $pull: { products: { product: pid }}})
+        const result = await cartModel.deleteOne({ _id: cid }, { $pull: { products: { product: pid } } })
         res.json({ message: result })
     } catch (error) {
         res.status(500).json({ status: 'error', error: 'Internal error' });
@@ -77,6 +85,5 @@ router.delete('/:cid/product/:pid', async (req, res) => {
 })
 
 export default router
-
 
 

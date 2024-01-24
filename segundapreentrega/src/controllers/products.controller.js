@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
         parsedQuery(),
         {
             limit: limit || 10,
-            page: page || 2,
+            page: page || 1,
             sort: sort ? { price: isSorted() } : null,
             lean: true
         }
