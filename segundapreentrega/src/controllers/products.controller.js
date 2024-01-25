@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { productsModel } from '../DAOs/mongodb/models/products.models.js'
-
+import { cartModel } from '../DAOs/mongodb/models/cart.models.js'
 
 const router = Router()
 
@@ -37,12 +37,16 @@ router.get('/', async (req, res) => {
     const { docs, hasPrevPage, hasNextPage, prevPage, nextPage, totalPages } = productsData
     const products = docs
 
+    const carts = await cartModel.find()
+    const cardId = carts[0]._id
+
     res.render('products', { 
         products,
         hasPrevPage,
         hasNextPage, 
         prevPage, 
         nextPage,
+        cardId,
         style: 'products.css',
     })
 })

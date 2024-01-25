@@ -46,20 +46,19 @@ router.post('/:cid/product/:pid', async (req, res) => {
 
         if (product) {
             const cart = await cartModel.findById(cid)
-            const existsProduct = cart.products.find(product => product.product === pid)
+            const existsProduct = cart.products.find(product => product._id === pid)
 
             if (existsProduct) {
-                existsProduct.quantity += quantity
+                existsProduct.quantity += quantity || 1
             } else {
                 cart.products.push({ product: pid, quantity })
             }
         }
     } catch (error) {
+        console.log(error)
         res.status(500).json({ status: 'error', error: 'Internal error' });
     }
 })
-
-
 
 // Actualiza la cantidad de un producto
 router.put('/:cid/product/:pid', async (req, res) => {

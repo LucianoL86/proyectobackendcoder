@@ -8,7 +8,7 @@
             <p>{{this.description}}</p>
             <p><strong>${{this.price}}</strong></p>
 
-            <form action="/cart/{{cartId}}/product/{{this._id}}" method="post">
+            <form action="/cart/{{../cartId}}/product/{{this._id}}" method="post">
                 <label class="quantity" for="quantity">Cantidad:</label>
                 <input class="quantity" type="number" id="quantity" name="quantity" value="1" min="1">
                 <button class="addToCart" type="submit">Agregar al carrito</button>
