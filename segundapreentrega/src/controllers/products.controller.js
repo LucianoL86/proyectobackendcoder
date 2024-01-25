@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
     const products = docs
 
     const carts = await cartModel.find()
-    const cardId = carts[0]._id
+    const cartId = carts[0]._id
 
     res.render('products', { 
         products,
@@ -46,7 +46,7 @@ router.get('/', async (req, res) => {
         hasNextPage, 
         prevPage, 
         nextPage,
-        cardId,
+        cartId,
         style: 'products.css',
     })
 })

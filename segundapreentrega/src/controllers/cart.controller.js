@@ -7,7 +7,7 @@ const router = Router()
 // Obtiene todos los productos del carrito
 router.get('/', async (req, res) => {
     try {
-        const carts = await cartModel.find()
+        const carts = await cartModel.find().populate('products').exec()
         res.json({ message: carts })
     } catch (error) {
         res.status(500).json({ status: 'error', error: 'Internal error' });
@@ -18,8 +18,7 @@ router.get('/', async (req, res) => {
 router.get('/:cid', async (req, res) => {
     try {
         const { cid } = req.params
-        const cart = await cartModel.findById(cid).populate('products').
-        exec()
+        const cart = await cartModel.findById(cid)
         res.json({ message: cart })
     } catch (error) {
         res.status(500).json({ status: 'error', error: 'Internal error' });
@@ -42,16 +41,26 @@ router.post('/:cid/product/:pid', async (req, res) => {
     try {
         const { cid, pid } = req.params
         const { quantity } = req.body
+        const qty = Number(quantity)
         const product = await productsModel.findById(pid)
 
         if (product) {
             const cart = await cartModel.findById(cid)
-            const existsProduct = cart.products.find(product => product._id === pid)
+            const existsProduct = cart.products.find(p => p.product.equals(pid))
+            console.log(existsProduct?.quantity)
 
             if (existsProduct) {
-                existsProduct.quantity += quantity || 1
+                const newQuantity = existsProduct.quantity + qty;
+                const result = await cartModel.updateOne({ _id: cid, 'products.product': pid }, { $set: { 'products.$.quantity': newQuantity } })
+                res.status(201).json({ message: result })
             } else {
-                cart.products.push({ product: pid, quantity })
+                const newProduct = {
+                    product,
+                    quantity: qty,
+                };
+                const result = await cartModel.updateOne({ _id: cid }, { $push: { products: newProduct } })
+                res.status(201).json({ message: result })
+
             }
         }
     } catch (error) {
@@ -72,13 +81,26 @@ router.put('/:cid/product/:pid', async (req, res) => {
     }
 })
 
+// Elimina todos los productos del carrito
+router.delete('/:cid/products', async (req, res) => {
+    try {
+        const { cid } = req.params
+        const result = await cartModel.delete({ _id: cid })
+        res.json({ message: result })
+        
+    }catch (error) {
+        res.status(500).json({ status: 'error', error: 'Internal error' });
+    }
+})
+
 // Elimina un producto del carrito
 router.delete('/:cid/product/:pid', async (req, res) => {
     try {
         const { cid, pid } = req.params
-        const result = await cartModel.deleteOne({ _id: cid }, { $pull: { products: { product: pid } } })
+        const result = await cartModel.updateOne({ _id: cid }, { $pull: { products: { product: pid } } })
         res.json({ message: result })
     } catch (error) {
+        console.log(error)
         res.status(500).json({ status: 'error', error: 'Internal error' });
     }
 })
