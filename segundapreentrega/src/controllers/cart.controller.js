@@ -7,7 +7,7 @@ const router = Router()
 // Obtiene todos los productos del carrito
 router.get('/', async (req, res) => {
     try {
-        const carts = await cartModel.find().populate('products').exec()
+        const carts = await cartModel.find()
         res.json({ message: carts })
     } catch (error) {
         res.status(500).json({ status: 'error', error: 'Internal error' });
