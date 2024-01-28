@@ -7,9 +7,14 @@ const router = Router()
 // Obtiene todos los productos del carrito
 router.get('/', async (req, res) => {
     try {
-        const carts = await cartModel.find()
-        res.json({ message: carts })
+        const cart = await cartModel.find()
+        res.render('cart', {
+            cart: cart[0]._id.toString(),
+            products: cart.products,
+            style: 'cart.css'
+        })
     } catch (error) {
+        console.log(error)
         res.status(500).json({ status: 'error', error: 'Internal error' });
     }
 })
@@ -18,8 +23,14 @@ router.get('/', async (req, res) => {
 router.get('/:cid', async (req, res) => {
     try {
         const { cid } = req.params
-        const cart = await cartModel.findById(cid)
-        res.json({ message: cart })
+        const cart = await cartModel.findById(cid).lean()
+
+        res.render('cart', {
+            cart: cart._id.toString(),
+            products: cart.products,
+            style: 'cart.css'
+        })
+
     } catch (error) {
         res.status(500).json({ status: 'error', error: 'Internal error' });
     }
@@ -68,39 +79,56 @@ router.post('/:cid/product/:pid', async (req, res) => {
     }
 })
 
-// Actualiza la cantidad de un producto
-router.put('/:cid/product/:pid', async (req, res) => {
-    try {
-        const { cid, pid } = req.params
-        const { quantity } = req.body
-        const result = await cartModel.updateOne({ _id: cid }, { $set: { products: { product: pid, quantity } } })
-        res.json({ message: result })
-    } catch (error) {
-        res.status(500).json({ status: 'error', error: 'Internal error' });
-    }
-})
-
-// Elimina todos los productos del carrito
-router.delete('/:cid/products', async (req, res) => {
-    try {
-        const { cid } = req.params
-        const result = await cartModel.delete({ _id: cid })
-        res.json({ message: result })
-        
-    }catch (error) {
-        res.status(500).json({ status: 'error', error: 'Internal error' });
-    }
-})
 
 // Elimina un producto del carrito
 router.delete('/:cid/product/:pid', async (req, res) => {
     try {
         const { cid, pid } = req.params
-        const result = await cartModel.updateOne({ _id: cid }, { $pull: { products: { product: pid } } })
-        res.json({ message: result })
+        const isCartValid = await cartModel.findById(cid)
+        const isProductValid = await productsModel.findById(pid)
+        let hasChanged = false
+
+        if (!isCartValid || !isProductValid) {
+            res.status(404).json({
+                status: 'error',
+                error: 'Cart or product not found'
+            });
+        }
+
+        const productIndex = isCartValid.products.findIndex(p => p.product.equals(pid))
+
+        if (productIndex === -1) {
+            res.status(404).json({
+                status: 'error',
+                error: 'Product not found in cart'
+            });
+        } else {
+            isCartValid.products[productIndex].quantity--
+            if (isCartValid.products[productIndex].quantity === 0) {
+                isCartValid.products.splice(productIndex, 1)
+            }
+            hasChanged = true
+        }
+
+        if (hasChanged) {
+            const result = await cartModel.findByIdAndUpdate(cid, {
+                products: isCartValid.products
+            })
+            res.json({
+                status: 'success',
+                message: isCartValid,
+                result
+            })
+        }
+
+
+
     } catch (error) {
         console.log(error)
-        res.status(500).json({ status: 'error', error: 'Internal error' });
+        res.status(500).json({
+            status: 'error',
+            error: 'Internal error'
+        });
     }
 })
 
